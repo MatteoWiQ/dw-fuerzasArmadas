@@ -36,6 +36,9 @@
 				},
 				{
 					"name": "Observaciones"
+				},
+				{
+					"name": "Casting"
 				}
 			],
 			"scriptLines": [
@@ -74,7 +77,10 @@
 				"          efectivos_desplegados = toInteger(regexReplace(toString(efectivos_desplegados), '[^0-9]', '')),",
 				"          detenidos = iif(isNull(toInteger(regexReplace(toString(detenidos), '[^0-9]', ''))), '0', toString(toInteger(regexReplace(toString(detenidos), '[^0-9]', '')))),",
 				"          incidentes = iif(isNull(toInteger(regexReplace(toString(incidentes), '[^0-9]', ''))), '0', toString(toInteger(regexReplace(toString(incidentes), '[^0-9]', ''))))) ~> Observaciones",
-				"Observaciones sink(allowSchemaDrift: true,",
+				"Observaciones derive(id_operacion = toInteger(id_operacion),",
+				"          id_tipo = toInteger(id_tipo),",
+				"          id_zona = toInteger(id_zona)) ~> Casting",
+				"Casting sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     partitionFileNames:['operaciones_limpias.csv'],",
 				"     umask: 0022,",

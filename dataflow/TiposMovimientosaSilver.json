@@ -9,7 +9,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "tbl_tipos_movimiento",
+						"referenceName": "ds_tipos_movimiento_bronze",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
@@ -23,14 +23,13 @@
 			],
 			"scriptLines": [
 				"source(output(",
-				"          id_tipo as integer,",
+				"          id_tipo as string,",
 				"          nombre as string,",
 				"          descripcion as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> source1",
+				"     ignoreNoFilesFound: false) ~> source1",
 				"source1 derive(id_tipo = toInteger(id_tipo),",
 				"          nombre = initCap(nombre)) ~> derivedColumn1"
 			]

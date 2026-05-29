@@ -1,0 +1,49 @@
+{
+	"name": "ZonasaSilver",
+	"properties": {
+		"folder": {
+			"name": "Bronze-Silver"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_zonas_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id_zona as string,",
+				"          nombre as string,",
+				"          departamento as string,",
+				"          frontera_con as string,",
+				"          tipo_terreno as string,",
+				"          altitud_msnm as string,",
+				"          nivel_riesgo as string,",
+				"          acceso_carretero as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 derive(id_zona = toInteger(id_zona),",
+				"          altitud_msnm = toInteger(altitud_msnm),",
+				"          tipo_terreno = initCap(trim(tipo_terreno)),",
+				"          nivel_riesgo = initCap(trim(nivel_riesgo)),",
+				"          acceso_carretero = toBoolean(acceso_carretero),",
+				"          frontera_con = iif(isNull(frontera_con) || trim(frontera_con) == '', toString(null()), trim(frontera_con)),",
+				"          nombre = trim(nombre),",
+				"          departamento = trim(departamento)) ~> derivedColumn1"
+			]
+		}
+	}
+}
