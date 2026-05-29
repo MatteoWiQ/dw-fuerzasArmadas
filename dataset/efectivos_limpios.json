@@ -1,5 +1,5 @@
 {
-	"name": "ds_operaciones_silver",
+	"name": "efectivos_limpios",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "dataLake",
@@ -13,6 +13,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
+				"fileName": "efectivos_limpios.csv",
 				"fileSystem": "silver"
 			},
 			"columnDelimiter": ",",
