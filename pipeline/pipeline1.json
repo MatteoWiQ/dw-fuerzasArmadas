@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Data flow1",
+				"name": "Efectivos",
 				"type": "ExecuteDataFlow",
 				"dependsOn": [],
 				"policy": {
@@ -32,11 +32,11 @@
 				}
 			},
 			{
-				"name": "Data flow2",
+				"name": "Operaciones",
 				"type": "ExecuteDataFlow",
 				"dependsOn": [
 					{
-						"activity": "Data flow1",
+						"activity": "Efectivos",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -68,11 +68,11 @@
 				}
 			},
 			{
-				"name": "Data flow3",
+				"name": "MovimientoPersonal",
 				"type": "ExecuteDataFlow",
 				"dependsOn": [
 					{
-						"activity": "Data flow2",
+						"activity": "Operaciones",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -93,6 +93,150 @@
 						"datasetParameters": {
 							"sink1": {
 								"FileName": "movimiento_personal_limpio.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "TipoOperacion",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "MovimientoPersonal",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "TipoOperacionaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "tipo_operacion_limpio.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "TipoMovimientos",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "TipoOperacion",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "TiposMovimientosaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "tipo_movimientos_limpio.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Unidades",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "TipoMovimientos",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "UnidadesaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "unidades_limpias.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Zonas",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Unidades",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "ZonasaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "zonas_limpias.csv"
 							}
 						}
 					},
