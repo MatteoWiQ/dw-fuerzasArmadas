@@ -15,7 +15,15 @@
 					"name": "source1"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_silver_csv_generico",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "derivedColumn1"
@@ -42,7 +50,14 @@
 				"          acceso_carretero = toBoolean(acceso_carretero),",
 				"          frontera_con = iif(isNull(frontera_con) || trim(frontera_con) == '', toString(null()), trim(frontera_con)),",
 				"          nombre = trim(nombre),",
-				"          departamento = trim(departamento)) ~> derivedColumn1"
+				"          departamento = trim(departamento)) ~> derivedColumn1",
+				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}
