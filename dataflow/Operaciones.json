@@ -1,0 +1,24 @@
+{
+	"name": "Operaciones",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_operaciones_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "OrigenOperaciones"
+				}
+			],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> OrigenOperaciones"
+			]
+		}
+	}
+}
