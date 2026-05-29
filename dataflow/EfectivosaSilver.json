@@ -1,6 +1,9 @@
 {
 	"name": "EfectivosaSilver",
 	"properties": {
+		"folder": {
+			"name": "Bronze-Silver"
+		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
 			"sources": [
@@ -12,10 +15,17 @@
 					"name": "Efectivos"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"name": "ASilver"
+				}
+			],
 			"transformations": [
 				{
 					"name": "derivedColumn1"
+				},
+				{
+					"name": "formulaSalario"
 				}
 			],
 			"scriptLines": [
@@ -36,7 +46,19 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false) ~> Efectivos",
-				"Efectivos derive({} = ERROR_FUNCTION('')) ~> derivedColumn1"
+				"Efectivos derive(nombre = initCap(trim(regexReplace(regexReplace(nombre, '\\\\s+', ' '), '#', ''))),",
+				"          ci = iif(isNull(ci) || trim(ci) == '', '0', regexReplace(ci, '[^0-9]', '')),",
+				"          genero = iif(rlike(upper(genero), '^M'), 'M', iif(rlike(upper(genero), '^F'), 'F', 'SIN DATO')),",
+				"          estado = iif(rlike(upper(estado), '^ACTIVO$|^A$'), 'ACTIVO', iif(rlike(upper(estado), '^BAJA$|^B$'), 'BAJA', iif(rlike(upper(estado), 'RESERVA'), 'RESERVA', 'SIN DATO'))),",
+				"          departamento_origen = iif(rlike(replace(upper(departamento_origen), ' ', ''), 'LAPAZ|^L\\\\.?P\\\\.?$'), 'LA PAZ',  iif(rlike(upper(departamento_origen), 'CRUZ|^S\\\\.?C\\\\.?Z?$'), 'SANTA CRUZ',  iif(rlike(upper(departamento_origen), 'CBBA|COCHABAMBA'), 'COCHABAMBA',  iif(rlike(upper(departamento_origen), '^B\\\\.?N\\\\.?$|BENI'), 'BENI',  iif(rlike(upper(departamento_origen), '^O\\\\.?R\\\\.?$|ORURO'), 'ORURO',  iif(rlike(upper(departamento_origen), '^T\\\\.?J\\\\.?$|TARIJA'), 'TARIJA',  iif(rlike(upper(departamento_origen), '^P\\\\.?T\\\\.?$|POTOSI'), 'POTOSI',  upper(trim(departamento_origen))))))))),",
+				"          salario_mensual = iif(rlike(regexReplace(salario_mensual, '[A-Za-z\\\\$\\\\s\\\\-]', ''), ',\\\\d{1,2}$'), replace(replace(regexReplace(salario_mensual, '[A-Za-z\\\\$\\\\s\\\\-]', ''), '.', ''), ',', '.'), replace(regexReplace(salario_mensual, '[A-Za-z\\\\$\\\\s\\\\-]', ''), ',', '')),",
+				"          fecha_nacimiento = iif(     isNull(coalesce(         toDate(replace(fecha_nacimiento, '/', '-'), 'yyyy-MM-dd'),         toDate(replace(fecha_nacimiento, '/', '-'), 'dd-MM-yyyy'),         toDate(replace(fecha_nacimiento, '/', '-'), 'MM-dd-yyyy'),         toDate(fecha_nacimiento, 'yyyyMMdd')     )),      '1900-01-01',      toString(coalesce(         toDate(replace(fecha_nacimiento, '/', '-'), 'yyyy-MM-dd'),         toDate(replace(fecha_nacimiento, '/', '-'), 'dd-MM-yyyy'),         toDate(replace(fecha_nacimiento, '/', '-'), 'MM-dd-yyyy'),         toDate(fecha_nacimiento, 'yyyyMMdd')     ), 'yyyy-MM-dd') ),",
+				"          fecha_ingreso = iif(     isNull(coalesce(         toDate(replace(fecha_ingreso, '/', '-'), 'yyyy-MM-dd'),         toDate(replace(fecha_ingreso, '/', '-'), 'dd-MM-yyyy'),         toDate(replace(fecha_ingreso, '/', '-'), 'MM-dd-yyyy'),         toDate(fecha_ingreso, 'yyyyMMdd')     )),      '1900-01-01',      toString(coalesce(         toDate(replace(fecha_ingreso, '/', '-'), 'yyyy-MM-dd'),         toDate(replace(fecha_ingreso, '/', '-'), 'dd-MM-yyyy'),         toDate(replace(fecha_ingreso, '/', '-'), 'MM-dd-yyyy'),         toDate(fecha_ingreso, 'yyyyMMdd')     ), 'yyyy-MM-dd') )) ~> derivedColumn1",
+				"derivedColumn1 derive(salario_mensual = regexReplace(iif(rlike(regexReplace(salario_mensual, '[A-Za-z\\\\$\\\\s\\\\-]', ''), ',\\\\d{1,2}$'), replace(replace(regexReplace(salario_mensual, '[A-Za-z\\\\$\\\\s\\\\-]', ''), '.', ''), ',', '.'), replace(regexReplace(salario_mensual, '[A-Za-z\\\\$\\\\s\\\\-]', ''), ',', '')), '^\\\\.+', '')) ~> formulaSalario",
+				"formulaSalario sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> ASilver"
 			]
 		}
 	}

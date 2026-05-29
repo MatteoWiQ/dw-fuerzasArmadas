@@ -1,0 +1,17 @@
+{
+	"name": "MovimientoPersonalaSilver",
+	"properties": {
+		"folder": {
+			"name": "Bronze-Silver"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				""
+			]
+		}
+	}
+}

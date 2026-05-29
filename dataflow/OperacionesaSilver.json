@@ -1,6 +1,9 @@
 {
 	"name": "OperacionesaSilver",
 	"properties": {
+		"folder": {
+			"name": "Bronze-Silver"
+		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
 			"sources": [
