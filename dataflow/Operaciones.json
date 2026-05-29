@@ -12,12 +12,74 @@
 					"name": "OrigenOperaciones"
 				}
 			],
-			"sinks": [],
-			"transformations": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_operaciones_silver",
+						"type": "DatasetReference"
+					},
+					"name": "DestinoSilverOperaciones"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LimpiarCostos"
+				},
+				{
+					"name": "Limpieza"
+				},
+				{
+					"name": "Fechas"
+				},
+				{
+					"name": "Observaciones"
+				}
+			],
 			"scriptLines": [
-				"source(allowSchemaDrift: true,",
+				"source(output(",
+				"          id_operacion as string,",
+				"          id_tipo as short,",
+				"          id_unidad_resp as short,",
+				"          id_zona as short,",
+				"          nombre_operacion as string,",
+				"          fecha_inicio as string,",
+				"          fecha_fin as string,",
+				"          efectivos_desplegados as string,",
+				"          vehiculos_utilizados as string,",
+				"          duracion_dias as string,",
+				"          costo_operacion as string,",
+				"          resultado as string,",
+				"          detenidos as string,",
+				"          area_km2 as string,",
+				"          incidentes as string,",
+				"          observaciones as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     ignoreNoFilesFound: false) ~> OrigenOperaciones"
+				"     ignoreNoFilesFound: false,",
+				"     multiLineRow: true) ~> OrigenOperaciones",
+				"OrigenOperaciones derive(costo_operacion = toDecimal(regexExtract(replace(costo_operacion, ',', ''), '(\\\\d+\\\\.?\\\\d*)', 1))) ~> LimpiarCostos",
+				"LimpiarCostos derive(efectivos_desplegados = toInteger(regexReplace(replace(replace(upper(efectivos_desplegados), 'TRESCIENTOS', '300'), 'DOS', '2'), '[^0-9]', '')),",
+				"          vehiculos_utilizados = toInteger(regexReplace(toString(vehiculos_utilizados), '[^0-9]', '')),",
+				"          duracion_dias = toInteger(regexReplace(toString(duracion_dias), '[^0-9]', '')),",
+				"          area_km2 = toDecimal(regexReplace(toString(area_km2), '[^0-9.]', '')),",
+				"          resultado = case(     rlike(upper(trim(toString(resultado))), 'POSITIVO|EXITOS|BUENO|CUMPLIDO|LOGRADO|COMPLETAD|FAVORABLE|CONCLUIDA|FINALIZADA'), 'EXITOSO',     rlike(upper(trim(toString(resultado))), 'FALLID|SIN ÉXITO|NO LOGRADO|NEGATIVO|INCOMPLET'), 'FALLIDO',     rlike(upper(trim(toString(resultado))), 'PROCESO|CURSO'), 'EN PROCESO',     'SIN DATO' ),",
+				"          nombre_operacion = trim(regexReplace(toString(nombre_operacion), '[\"\\']', ''))) ~> Limpieza",
+				"Limpieza derive(fecha_inicio = coalesce(toDate(toString(fecha_inicio), 'yyyy/MM/dd'), toDate(toString(fecha_inicio), 'MM-dd-yyyy'), toDate(toString(fecha_inicio), 'dd-MM-yyyy'), toDate(toString(fecha_inicio), 'dd/MM/yyyy'), toDate(toString(fecha_inicio), 'yyyy-MM-dd'), toDate(toString(fecha_inicio), 'yyyyMMdd')),",
+				"          fecha_fin = coalesce(toDate(toString(fecha_fin), 'yyyy/MM/dd'), toDate(toString(fecha_fin), 'MM-dd-yyyy'), toDate(toString(fecha_fin), 'dd-MM-yyyy'), toDate(toString(fecha_fin), 'dd/MM/yyyy'), toDate(toString(fecha_fin), 'yyyy-MM-dd'), toDate(toString(fecha_fin), 'yyyyMMdd'))) ~> Fechas",
+				"Fechas derive(observaciones = iif(rlike(upper(trim(toString(observaciones))), '^(NULL|N/A|S/N)$'), toString(null()), upper(trim(regexReplace(toString(observaciones), '[\\r\\n]+', ' ')))),",
+				"          efectivos_desplegados = toInteger(regexReplace(toString(efectivos_desplegados), '[^0-9]', '')),",
+				"          detenidos = iif(rlike(lower(toString(detenidos)), 'sin|ningun|cero|n/a|-|null'), toInteger(0), toInteger(regexExtract(replace(replace(replace(replace(lower(toString(detenidos)), 'uno', '1'), 'dos', '2'), 'ocho', '8'), 'diez', '10'), '(\\\\d+)', 1))),",
+				"          incidentes = iif(rlike(lower(toString(incidentes)), 'sin|ningun|cero|n/a|-|null'), toInteger(0), toInteger(regexExtract(replace(replace(replace(replace(replace(replace(lower(toString(incidentes)), 'uno', '1'), 'dos', '2'), 'tres', '3'), 'cinco', '5'), 'ocho', '8'), 'diez', '10'), '(\\\\d+)', 1)))) ~> Observaciones",
+				"Observaciones sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['operaciones_limpias.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> DestinoSilverOperaciones"
 			]
 		}
 	}
