@@ -1,0 +1,32 @@
+{
+	"name": "TipoOperacionaSilver",
+	"properties": {
+		"folder": {
+			"name": "Bronze-Silver"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_tipos_operacion_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          id_tipo as string,",
+				"          nombre as string,",
+				"          categoria as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1"
+			]
+		}
+	}
+}

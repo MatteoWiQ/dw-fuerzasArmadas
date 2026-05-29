@@ -9,13 +9,21 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "tbl_movimientos_personal",
+						"referenceName": "ds_movimientos_personal_bronze",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_silver_csv_generico",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "derivedColumn1"
@@ -23,11 +31,11 @@
 			],
 			"scriptLines": [
 				"source(output(",
-				"          id_movimiento as integer,",
-				"          id_efectivo as integer,",
-				"          id_unidad_destino as integer,",
-				"          id_rango as integer,",
-				"          id_tipo as integer,",
+				"          id_movimiento as string,",
+				"          id_efectivo as string,",
+				"          id_unidad_destino as string,",
+				"          id_rango as string,",
+				"          id_tipo as string,",
 				"          fecha_movimiento as string,",
 				"          antiguedad_anios as string,",
 				"          salario_mensual as string,",
@@ -35,8 +43,7 @@
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> source1",
+				"     ignoreNoFilesFound: false) ~> source1",
 				"source1 derive(fecha_movimiento = case(     rlike(fecha_movimiento, '^\\\\d{4}/\\\\d{2}/\\\\d{2}$'), toDate(fecha_movimiento, 'yyyy/MM/dd'),     rlike(fecha_movimiento, '^\\\\d{4}-\\\\d{2}-\\\\d{2}$'), toDate(fecha_movimiento, 'yyyy-MM-dd'),     rlike(fecha_movimiento, '^\\\\d{8}$'), toDate(fecha_movimiento, 'yyyyMMdd'),     rlike(fecha_movimiento, '^\\\\d{2}/\\\\d{2}/\\\\d{4}$'), toDate(fecha_movimiento, 'dd/MM/yyyy'),     rlike(fecha_movimiento, '^\\\\d{2}-\\\\d{2}-\\\\d{4}$') && toInteger(split(fecha_movimiento, '-')[1]) > 12, toDate(fecha_movimiento, 'dd-MM-yyyy'),     rlike(fecha_movimiento, '^\\\\d{2}-\\\\d{2}-\\\\d{4}$') && toInteger(split(fecha_movimiento, '-')[2]) > 12, toDate(fecha_movimiento, 'MM-dd-yyyy'),     rlike(fecha_movimiento, '^\\\\d{2}-\\\\d{2}-\\\\d{4}$'), toDate(fecha_movimiento, 'dd-MM-yyyy'),     toDate(null()) ),",
 				"          antiguedad_anios = case(\r",
 				"    isNull(antiguedad_anios), toDecimal(null(), 4, 1),\r",
@@ -74,7 +81,14 @@
 				"          id_efectivo = toInteger(id_efectivo),",
 				"          id_unidad_destino = toInteger(id_unidad_destino),",
 				"          id_rango = toInteger(id_rango),",
-				"          id_tipo = toInteger(id_tipo)) ~> derivedColumn1"
+				"          id_tipo = toInteger(id_tipo)) ~> derivedColumn1",
+				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}
