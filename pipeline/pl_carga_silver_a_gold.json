@@ -511,6 +511,20 @@
 						"disableMetricsCollection": false
 					},
 					"enableStaging": false,
+					"enableSkipIncompatibleRow": true,
+					"logSettings": {
+						"enableCopyActivityLog": true,
+						"copyActivityLogSettings": {
+							"logLevel": "Warning",
+							"enableReliableLogging": false
+						},
+						"logLocationSettings": {
+							"linkedServiceName": {
+								"referenceName": "dataLake",
+								"type": "LinkedServiceReference"
+							}
+						}
+					},
 					"translator": {
 						"type": "TabularTranslator",
 						"mappings": [

@@ -5,6 +5,9 @@
 			"referenceName": "sqlGold",
 			"type": "LinkedServiceReference"
 		},
+		"folder": {
+			"name": "gold"
+		},
 		"annotations": [],
 		"type": "AzureSqlTable",
 		"schema": [
