@@ -1114,6 +1114,32 @@
 						"type": "DatasetReference"
 					}
 				]
+			},
+			{
+				"name": "Script1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "sqlGold",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "-- Si la vista ya existe, la borramos para actualizarla\nDROP VIEW IF EXISTS dbo.vw_traslados_ultimos_3_anios;\nGO\n\n-- Creamos la vista con la estructura limpia y real\nCREATE VIEW dbo.vw_traslados_ultimos_3_anios AS\nSELECT \n    u.departamento,\n    COUNT(m.id_efectivo) AS total_traslados\nFROM dbo.fact_movimientos_personal m\nJOIN dbo.dim_unidades u ON m.id_unidad_destino = u.id_unidad\nJOIN dbo.dim_tipo_movimiento tm ON m.id_tipo = tm.id_tipo\nWHERE m.fecha_movimiento >= DATEADD(YEAR, -3, GETDATE())\n  AND tm.nombre = 'Traslado' \nGROUP BY u.departamento;"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
 			}
 		],
 		"annotations": []
