@@ -1,5 +1,5 @@
 {
-	"name": "tipo_movimiento_csv",
+	"name": "tipo_movimiento_limpio_csv",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "dataLake",

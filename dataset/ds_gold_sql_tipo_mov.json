@@ -1,0 +1,30 @@
+{
+	"name": "ds_gold_sql_tipo_mov",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "sqlGold",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id_tipo",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre",
+				"type": "varchar"
+			},
+			{
+				"name": "descripcion",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "dim_tipo_movimiento"
+		}
+	}
+}
