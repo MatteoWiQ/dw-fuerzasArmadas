@@ -1,0 +1,29 @@
+{
+	"name": "ds_gold_sql_traslados_departamento",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "sqlGold",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "gold"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "departamento",
+				"type": "varchar"
+			},
+			{
+				"name": "total_traslados",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "rep_traslados_departamento"
+		}
+	}
+}

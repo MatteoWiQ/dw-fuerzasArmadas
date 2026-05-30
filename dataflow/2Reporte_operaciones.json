@@ -1,0 +1,17 @@
+{
+	"name": "2Reporte_operaciones",
+	"properties": {
+		"folder": {
+			"name": "Silver-Gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				""
+			]
+		}
+	}
+}

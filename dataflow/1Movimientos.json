@@ -1,5 +1,5 @@
 {
-	"name": "Movimientos",
+	"name": "1Movimientos",
 	"properties": {
 		"folder": {
 			"name": "Silver-Gold"
@@ -29,7 +29,15 @@
 					"name": "TipoMovimiento"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_gold_sql_traslados_departamento",
+						"type": "DatasetReference"
+					},
+					"name": "TrasladosDepartamentos"
+				}
+			],
 			"transformations": [
 				{
 					"name": "join1"
@@ -95,8 +103,9 @@
 				"     matchType:'exact',",
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join2",
-				"select1 filter(nombre == 'Traslado' && fecha_movimiento >= addMonths(currentDate(), -36)) ~> FiltroTraslados",
-				"FiltroTraslados aggregate(total_traslados = count(id_efectivo)) ~> aggregate1",
+				"select1 filter(nombre_movimiento == 'Traslado' && fecha_movimiento >= addMonths(currentDate(), -36)) ~> FiltroTraslados",
+				"FiltroTraslados aggregate(groupBy(departamento),",
+				"     total_traslados = count(id_efectivo)) ~> aggregate1",
 				"join2 select(mapColumn(",
 				"          id_movimiento,",
 				"          id_efectivo,",
@@ -109,17 +118,32 @@
 				"          observaciones,",
 				"          id_unidad,",
 				"          id_brigada,",
-				"          nombre = Unidades@nombre,",
+				"          nombre_unidad = Unidades@nombre,",
 				"          codigo,",
 				"          ciudad,",
 				"          departamento,",
 				"          tipo_cuartel,",
 				"          id_tipo = TipoMovimiento@id_tipo,",
-				"          nombre = TipoMovimiento@nombre,",
+				"          nombre_movimiento = TipoMovimiento@nombre,",
 				"          descripcion",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select1"
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"aggregate1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          departamento as string,",
+				"          total_traslados as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> TrasladosDepartamentos"
 			]
 		}
 	}
