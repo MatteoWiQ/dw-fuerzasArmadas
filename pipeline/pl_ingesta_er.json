@@ -3,9 +3,16 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Efectivos",
+				"name": "EfectivosCopiar",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Script1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -57,7 +64,14 @@
 			{
 				"name": "Copiar_Movimientos",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "EfectivosCopiar",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -109,7 +123,14 @@
 			{
 				"name": "Copiar_Tipos_Movimiento",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Copiar_Movimientos",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -161,7 +182,14 @@
 			{
 				"name": "Copiar_Operaciones",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Copiar_Tipos_Movimiento",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -213,7 +241,14 @@
 			{
 				"name": "Copiar_Tipos_Operacion",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Copiar_Operaciones",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -265,7 +300,14 @@
 			{
 				"name": "Copiar_Unidades",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Copiar_Tipos_Operacion",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -317,7 +359,14 @@
 			{
 				"name": "Copiar_Zonas",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Copiar_Unidades",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -365,6 +414,1546 @@
 						"type": "DatasetReference"
 					}
 				]
+			},
+			{
+				"name": "Script1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "sqlGold",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "-- ======================================================================\n-- FASE 1: LIMPIEZA DE TABLAS (DROP)\n-- Orden correcto: Primero Hechos y Reportes, luego Dimensiones.\n-- ======================================================================\n\n-- 1.1 Borrar Reportes\nDROP TABLE IF EXISTS dbo.rep_traslados_departamento;\nDROP TABLE IF EXISTS dbo.rep_costos_operaciones;\nDROP TABLE IF EXISTS dbo.rep_operaciones_por_mes;\nDROP TABLE IF EXISTS dbo.rep_rotacion_unidades;\n\n-- 1.2 Borrar Hechos\nDROP TABLE IF EXISTS dbo.fact_movimientos_personal;\nDROP TABLE IF EXISTS dbo.fact_operaciones;\n\n-- 1.3 Borrar Dimensiones\nDROP TABLE IF EXISTS dbo.dim_zonas;\nDROP TABLE IF EXISTS dbo.dim_unidades;\nDROP TABLE IF EXISTS dbo.dim_tipo_operacion;\nDROP TABLE IF EXISTS dbo.dim_tipo_movimiento;\nDROP TABLE IF EXISTS dbo.dim_efectivos;\n\n-- ======================================================================\n-- FASE 2: CREACIÓN DE DIMENSIONES (Catálogos Base)\n-- ======================================================================\n\nCREATE TABLE dbo.dim_zonas (\n    id_zona INT PRIMARY KEY,\n    nombre VARCHAR(150) NOT NULL,\n    departamento VARCHAR(100) NOT NULL,\n    frontera_con VARCHAR(100) NULL,\n    tipo_terreno VARCHAR(100) NULL,\n    altitud_msnm INT NULL,\n    nivel_riesgo VARCHAR(50) NULL,\n    acceso_carretero BIT NULL\n);\n\nCREATE TABLE dbo.dim_unidades (\n    id_unidad INT PRIMARY KEY,\n    id_brigada INT NULL,\n    nombre VARCHAR(150) NOT NULL,\n    codigo VARCHAR(50) NULL,\n    ciudad VARCHAR(100) NULL,\n    departamento VARCHAR(100) NULL,\n    tipo_cuartel VARCHAR(50) NULL\n);\n\nCREATE TABLE dbo.dim_tipo_operacion (\n    id_tipo INT PRIMARY KEY,\n    nombre VARCHAR(150) NOT NULL,\n    categoria VARCHAR(100) NOT NULL\n);\n\nCREATE TABLE dbo.dim_tipo_movimiento (\n    id_tipo INT PRIMARY KEY,\n    nombre VARCHAR(100) NOT NULL,\n    descripcion VARCHAR(250) NULL\n);\n\nCREATE TABLE dbo.dim_efectivos (\n    id_efectivo INT PRIMARY KEY,\n    id_especialidad INT NULL,\n    id_unidad_actual INT NULL,\n    id_rango_actual INT NULL,\n    nombre VARCHAR(200) NOT NULL,\n    ci VARCHAR(50) NULL,\n    fecha_nacimiento DATE NULL,\n    genero VARCHAR(20) NULL,\n    departamento_origen VARCHAR(100) NULL,\n    fecha_ingreso DATE NULL,\n    estado VARCHAR(50) NULL,\n    salario_mensual DECIMAL(12,2) NULL\n);\n\n-- ======================================================================\n-- FASE 3: CREACIÓN DE TABLAS DE HECHOS (Transacciones)\n-- ======================================================================\n\nCREATE TABLE dbo.fact_movimientos_personal (\n    id_movimiento INT PRIMARY KEY,\n    id_efectivo INT NULL,\n    id_unidad_destino INT NULL,\n    id_rango INT NULL,\n    id_tipo INT NULL,\n    fecha_movimiento DATE NULL,\n    antiguedad_anios DECIMAL(5,2) NULL,\n    salario_mensual DECIMAL(12,2) NULL,\n    observaciones VARCHAR(500) NULL\n);\n\nCREATE TABLE dbo.fact_operaciones (\n    id_operacion INT PRIMARY KEY,\n    id_tipo INT NULL,\n    id_unidad_resp INT NULL,\n    id_zona INT NULL,\n    nombre_operacion VARCHAR(200) NULL,\n    fecha_inicio DATE NULL,\n    fecha_fin DATE NULL,\n    efectivos_desplegados INT NULL,\n    vehiculos_utilizados INT NULL,\n    duracion_dias INT NULL,\n    costo_operacion DECIMAL(12,2) NULL,\n    resultado VARCHAR(50) NULL,\n    detenidos INT NULL,\n    area_km2 DECIMAL(10,2) NULL,\n    incidentes INT NULL,\n    observaciones VARCHAR(500) NULL\n);\n\n-- ======================================================================\n-- FASE 4: CREACIÓN DE DATA MARTS (Tablas de Reporte / Destinos Gold)\n-- ======================================================================\n\nCREATE TABLE dbo.rep_traslados_departamento (\n    departamento VARCHAR(100) PRIMARY KEY,\n    total_traslados INT NOT NULL\n);\n\nCREATE TABLE dbo.rep_costos_operaciones (\n    grupo_operacion VARCHAR(100) PRIMARY KEY,\n    cantidad_operaciones INT NOT NULL,\n    costo_promedio DECIMAL(12,2) NULL\n);\n\nCREATE TABLE dbo.rep_operaciones_por_mes (\n    mes_del_anio INT PRIMARY KEY,\n    total_operaciones INT NOT NULL,\n    presupuesto_ejecutado DECIMAL(15,2) NULL\n);\n\nCREATE TABLE dbo.rep_rotacion_unidades (\n    nombre_unidad VARCHAR(150) PRIMARY KEY,\n    total_rotacion INT NOT NULL\n);"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "Efectivos",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Copiar_Zonas",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "EfectivosaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"ASilver": {
+								"FileName": "efectivos_limpios.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Operaciones",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Efectivos",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "OperacionesaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"DestinoSilverOperaciones": {
+								"FileName": "operaciones_limpias.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "TipoOperacion",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Operaciones",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "TipoOperacionaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "tipo_operacion_limpio.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "TipoMovimientos",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "TipoOperacion",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "TiposMovimientosaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "tipo_movimientos_limpio.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Unidades",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "TipoMovimientos",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "UnidadesaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "unidades_limpias.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Zonas",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Unidades",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "ZonasaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "zonas_limpias.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Movimiento Personal",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Zonas",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "MovimientoPersonalaSilver",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sink1": {
+								"FileName": "movimiento_personal_limpio.csv"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Cargar_Zonas",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Movimiento Personal",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.dim_zonas;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_zona",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_zona",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "departamento",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "departamento",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "frontera_con",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "frontera_con",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "tipo_terreno",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "tipo_terreno",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "altitud_msnm",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "altitud_msnm",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "nivel_riesgo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "nivel_riesgo",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "acceso_carretero",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "acceso_carretero",
+									"type": "Boolean",
+									"physicalType": "bit"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "zonas_limpias_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_zonas",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Cargar_Unidades",
+				"description": "",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Zonas",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.dim_unidades;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_unidad",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_unidad",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_brigada",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_brigada",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "codigo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "codigo",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "ciudad",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ciudad",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "departamento",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "departamento",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "tipo_cuartel",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "tipo_cuartel",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "unidades_limpias_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_unidades",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Cargar_Tipo_Op",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Unidades",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_tipo",
+									"type": "String"
+								},
+								"sink": {
+									"name": "id_tipo",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "nombre",
+									"type": "String"
+								},
+								"sink": {
+									"name": "nombre",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "categoria",
+									"type": "String"
+								},
+								"sink": {
+									"name": "categoria",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "tipo_operacion_limpio_csv",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Cargar_Tipo_Mov",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Tipo_Op",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.dim_tipo_movimiento;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_tipo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_tipo",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "descripcion",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "descripcion",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "tipo_movimiento_limpio_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_tipo_mov",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Cargar_Efectivos",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Tipo_Mov",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.dim_efectivos;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": true,
+					"logSettings": {
+						"enableCopyActivityLog": true,
+						"copyActivityLogSettings": {
+							"logLevel": "Warning",
+							"enableReliableLogging": false
+						},
+						"logLocationSettings": {
+							"linkedServiceName": {
+								"referenceName": "dataLake",
+								"type": "LinkedServiceReference"
+							}
+						}
+					},
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_efectivo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_efectivo",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_especialidad",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_especialidad",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_unidad_actual",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_unidad_actual",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_rango_actual",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_rango_actual",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "nombre",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "ci",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ci",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "fecha_nacimiento",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "fecha_nacimiento",
+									"type": "Date",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "genero",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "genero",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "departamento_origen",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "departamento_origen",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "fecha_ingreso",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "fecha_ingreso",
+									"type": "Date",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "estado",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "estado",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "salario_mensual",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "salario_mensual",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 2,
+									"precision": 12
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "efectivos_limpios_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_efectivos",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Cargar_Operaciones",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Efectivos",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.fact_operaciones;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_operacion",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_operacion",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_tipo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_tipo",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_unidad_resp",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_unidad_resp",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_zona",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_zona",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "nombre_operacion",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "nombre_operacion",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "fecha_inicio",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "fecha_inicio",
+									"type": "Date",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "fecha_fin",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "fecha_fin",
+									"type": "Date",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "efectivos_desplegados",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "efectivos_desplegados",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "vehiculos_utilizados",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "vehiculos_utilizados",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "duracion_dias",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "duracion_dias",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "costo_operacion",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "costo_operacion",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 2,
+									"precision": 12
+								}
+							},
+							{
+								"source": {
+									"name": "resultado",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "resultado",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "detenidos",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "detenidos",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "area_km2",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "area_km2",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 2,
+									"precision": 10
+								}
+							},
+							{
+								"source": {
+									"name": "incidentes",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "incidentes",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "observaciones",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "observaciones",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "operaciones_limpiascsv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_operaciones",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Cargar_Mov_Personal",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Operaciones",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE dbo.fact_movimientos_personal;",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "id_movimiento",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_movimiento",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_efectivo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_efectivo",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_unidad_destino",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_unidad_destino",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_rango",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_rango",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "id_tipo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "id_tipo",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "fecha_movimiento",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "fecha_movimiento",
+									"type": "Date",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "antiguedad_anios",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "antiguedad_anios",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 2,
+									"precision": 5
+								}
+							},
+							{
+								"source": {
+									"name": "salario_mensual",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "salario_mensual",
+									"type": "Decimal",
+									"physicalType": "decimal",
+									"scale": 2,
+									"precision": 12
+								}
+							},
+							{
+								"source": {
+									"name": "observaciones",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "observaciones",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "movimiento_personal_limpio_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_mov_personal",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Pregunta1",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Cargar_Mov_Personal",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "1Movimientos",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Pregunta2",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Pregunta1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "2ReporteOperaciones",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Pregunta3",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Pregunta2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "3CostoOperacionesMes",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Pregunta4",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Pregunta3",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "4MayorRotacionPersonal",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
 			}
 		],
 		"annotations": []
