@@ -1,5 +1,5 @@
 {
-	"name": "2ReporteOperaciones",
+	"name": "3CostoOperacionesMes",
 	"properties": {
 		"folder": {
 			"name": "Silver-Gold"
@@ -12,32 +12,19 @@
 						"referenceName": "ds_gold_sql_operaciones",
 						"type": "DatasetReference"
 					},
-					"name": "Operaciones"
-				},
-				{
-					"dataset": {
-						"referenceName": "ds_gold_sql_tipo_operacion",
-						"type": "DatasetReference"
-					},
-					"name": "tipoOperaciones"
+					"name": "source1"
 				}
 			],
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "sql_reporte_costo_operaciones",
+						"referenceName": "sql_reporte_operaciones_mes",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
 				}
 			],
 			"transformations": [
-				{
-					"name": "join1"
-				},
-				{
-					"name": "filter1"
-				},
 				{
 					"name": "derivedColumn1"
 				},
@@ -67,32 +54,17 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> Operaciones",
-				"source(output(",
-				"          id_tipo as integer,",
-				"          nombre as string,",
-				"          categoria as string",
-				"     ),",
-				"     allowSchemaDrift: true,",
-				"     validateSchema: false,",
-				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> tipoOperaciones",
-				"Operaciones, tipoOperaciones join(Operaciones@id_tipo == tipoOperaciones@id_tipo,",
-				"     joinType:'inner',",
-				"     matchType:'exact',",
-				"     ignoreSpaces: false,",
-				"     broadcast: 'auto')~> join1",
-				"join1 filter(nombre == 'Antinarcóticos' || lower(categoria) == 'defensa_civil') ~> filter1",
-				"filter1 derive(grupo_operacion = iif(nombre == 'Antinarcóticos', 'Antinarcóticos', 'Defensa Civil')) ~> derivedColumn1",
-				"derivedColumn1 aggregate(groupBy(grupo_operacion),",
-				"     costo_promedio = avg(costo_operacion),",
-				"          cantidad_operaciones = count(id_operacion)) ~> aggregate1",
+				"     format: 'table') ~> source1",
+				"source1 derive(mes_del_anio = iif(isNull(fecha_inicio), 0, month(fecha_inicio))) ~> derivedColumn1",
+				"derivedColumn1 aggregate(groupBy(mes_del_anio),",
+				"     total_operaciones = count(id_operacion),",
+				"          presupuesto_ejecutado = sum(costo_operacion)) ~> aggregate1",
 				"aggregate1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
-				"          categoria as string,",
-				"          cantidad_operaciones as integer,",
-				"          costo_promedio as decimal(12,2)",
+				"          mes_del_anio as integer,",
+				"          total_operaciones as integer,",
+				"          presupuesto_ejecutado as decimal(15,2)",
 				"     ),",
 				"     deletable:false,",
 				"     insertable:true,",

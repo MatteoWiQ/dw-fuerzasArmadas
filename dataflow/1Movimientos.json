@@ -32,7 +32,7 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "ds_gold_sql_traslados_departamento",
+						"referenceName": "sql_traslados_departamento",
 						"type": "DatasetReference"
 					},
 					"name": "TrasladosDepartamentos"

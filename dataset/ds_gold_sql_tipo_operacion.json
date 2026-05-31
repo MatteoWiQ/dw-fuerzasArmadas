@@ -1,29 +1,33 @@
 {
-	"name": "sql_traslados_departamento",
+	"name": "ds_gold_sql_tipo_operacion",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "sqlGold",
 			"type": "LinkedServiceReference"
 		},
 		"folder": {
-			"name": "gold/Resultados"
+			"name": "gold"
 		},
 		"annotations": [],
 		"type": "AzureSqlTable",
 		"schema": [
 			{
-				"name": "departamento",
+				"name": "id_tipo",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre",
 				"type": "varchar"
 			},
 			{
-				"name": "total_traslados",
-				"type": "int",
-				"precision": 10
+				"name": "categoria",
+				"type": "varchar"
 			}
 		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "rep_traslados_departamento"
+			"table": "dim_tipo_operacion"
 		}
 	}
 }

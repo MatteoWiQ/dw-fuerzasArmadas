@@ -1,5 +1,5 @@
 {
-	"name": "sql_traslados_departamento",
+	"name": "sql_reporte_costo_operaciones",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "sqlGold",
@@ -12,18 +12,24 @@
 		"type": "AzureSqlTable",
 		"schema": [
 			{
-				"name": "departamento",
+				"name": "categoria",
 				"type": "varchar"
 			},
 			{
-				"name": "total_traslados",
+				"name": "cantidad_operaciones",
 				"type": "int",
 				"precision": 10
+			},
+			{
+				"name": "costo_promedio",
+				"type": "decimal",
+				"precision": 12,
+				"scale": 2
 			}
 		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "rep_traslados_departamento"
+			"table": "rep_costos_operaciones"
 		}
 	}
 }

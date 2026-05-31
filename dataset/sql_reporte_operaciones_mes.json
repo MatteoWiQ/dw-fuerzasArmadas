@@ -1,5 +1,5 @@
 {
-	"name": "sql_traslados_departamento",
+	"name": "sql_reporte_operaciones_mes",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "sqlGold",
@@ -12,18 +12,25 @@
 		"type": "AzureSqlTable",
 		"schema": [
 			{
-				"name": "departamento",
-				"type": "varchar"
-			},
-			{
-				"name": "total_traslados",
+				"name": "mes_del_anio",
 				"type": "int",
 				"precision": 10
+			},
+			{
+				"name": "total_operaciones",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "presupuesto_ejecutado",
+				"type": "decimal",
+				"precision": 15,
+				"scale": 2
 			}
 		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "rep_traslados_departamento"
+			"table": "rep_operaciones_por_mes"
 		}
 	}
 }
