@@ -1,0 +1,149 @@
+{
+	"name": "4MayorRotacionPersonal",
+	"properties": {
+		"folder": {
+			"name": "Silver-Gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_gold_sql_mov_personal",
+						"type": "DatasetReference"
+					},
+					"name": "MovimientoPersonal"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_gold_sql_unidades",
+						"type": "DatasetReference"
+					},
+					"name": "Unidades"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_gold_sql_tipo_mov",
+						"type": "DatasetReference"
+					},
+					"name": "TipoMovimiento"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "sql_reporte_rotacion_unidades",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "aggregate1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id_movimiento as integer,",
+				"          id_efectivo as integer,",
+				"          id_unidad_destino as integer,",
+				"          id_rango as integer,",
+				"          id_tipo as integer,",
+				"          fecha_movimiento as date,",
+				"          antiguedad_anios as decimal(5,2),",
+				"          salario_mensual as decimal(12,2),",
+				"          observaciones as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> MovimientoPersonal",
+				"source(output(",
+				"          id_unidad as integer,",
+				"          id_brigada as integer,",
+				"          nombre as string,",
+				"          codigo as string,",
+				"          ciudad as string,",
+				"          departamento as string,",
+				"          tipo_cuartel as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> Unidades",
+				"source(output(",
+				"          id_tipo as integer,",
+				"          nombre as string,",
+				"          descripcion as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> TipoMovimiento",
+				"MovimientoPersonal, Unidades join(id_unidad_destino == id_unidad,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1, TipoMovimiento join(MovimientoPersonal@id_tipo == TipoMovimiento@id_tipo,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join2",
+				"join2 select(mapColumn(",
+				"          id_movimiento,",
+				"          id_efectivo,",
+				"          id_unidad_destino,",
+				"          id_rango,",
+				"          id_tipo = MovimientoPersonal@id_tipo,",
+				"          fecha_movimiento,",
+				"          antiguedad_anios,",
+				"          salario_mensual,",
+				"          observaciones,",
+				"          id_unidad,",
+				"          id_brigada,",
+				"          nombre_unidad = Unidades@nombre,",
+				"          codigo,",
+				"          ciudad,",
+				"          departamento,",
+				"          tipo_cuartel,",
+				"          id_tipo = TipoMovimiento@id_tipo,",
+				"          nombre_movimiento = TipoMovimiento@nombre,",
+				"          descripcion",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 filter(nombre_movimiento == 'Baja' || nombre_movimiento == 'Traslado') ~> filter1",
+				"filter1 aggregate(groupBy(nombre_unidad),",
+				"     total_rotacion = count(id_efectivo)) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          nombre_unidad as string,",
+				"          total_rotacion as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+			]
+		}
+	}
+}

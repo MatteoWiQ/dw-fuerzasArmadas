@@ -1,0 +1,29 @@
+{
+	"name": "sql_reporte_rotacion_unidades",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "sqlGold",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "gold/Resultados"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "nombre_unidad",
+				"type": "varchar"
+			},
+			{
+				"name": "total_rotacion",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "rep_rotacion_unidades"
+		}
+	}
+}
