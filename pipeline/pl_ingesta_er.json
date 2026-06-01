@@ -1031,6 +1031,11 @@
 							"type": "DelimitedTextReadSettings"
 						}
 					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
 					"enableStaging": false,
 					"translator": {
 						"type": "TabularTranslator",
@@ -1065,12 +1070,23 @@
 									"type": "String"
 								}
 							}
-						]
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
 					}
 				},
 				"inputs": [
 					{
 						"referenceName": "tipo_operacion_limpio_csv",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_gold_sql_tipo_operacion",
 						"type": "DatasetReference"
 					}
 				]
